@@ -34,6 +34,11 @@ nav button:focus-visible,.opt:focus-visible,.next:focus-visible{outline:2px soli
 .exp{color:var(--sub);font-size:14px;margin-top:8px}
 .next{margin-top:10px;padding:10px 22px;border:0;border-radius:999px;background:var(--accent2);color:#1a1613;font-size:15px;font-family:inherit;cursor:pointer}
 .score{font-size:40px;color:var(--accent);text-align:center;margin:10px 0}
+.date{font-size:34px;color:var(--accent);margin:0 0 6px}
+.ev{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+.ev:first-of-type{border-top:0}
+.ev b{flex:0 0 64px;color:var(--accent2)}
+.hint{background:var(--chip);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--sub);margin:8px 0}
 </style>
 </head>
 <body>
@@ -58,6 +63,8 @@ var DATA=[
 {id:"lizhi",name:"荔枝",tag:"岭南佳果 · 贡园古树",
  body:["高州是岭南著名的荔枝产区，根子镇一带有历史悠久的荔枝贡园和大片古荔枝树。种植荔枝的传统延续多个世纪，形成了独特的荔枝文化。","每年夏季荔枝成熟，果农采摘、运输、销往各地，荔枝既是美味，也是高州农耕文化与地方经济的重要象征。"],
  facts:[["季节","每年约五至七月"],["代表品种","白糖罂、妃子笑等"],["看点","贡园古树、荔枝林、采摘体验"]]},
+{id:"today",name:"历史上的今天",tag:"高州大事记",kind:"today"},
+{id:"person",name:"今日人物",tag:"每日一位高州先贤",kind:"person"},
 {id:"quiz",name:"趣味问答",tag:"测测你对高州文化的了解",quiz:true}
 ];
 var QUIZ=[
@@ -66,17 +73,56 @@ var QUIZ=[
 {q:"粤西人常说的“第二个春节”指的是？",o:["中秋","年例","端午","元宵"],a:1,e:"年例是粤西各村按固定日期举行的传统民俗，热闹堪比春节。"},
 {q:"高州根子镇以什么闻名？",o:["茶叶","蚕桑","荔枝贡园","陶瓷"],a:2,e:"根子镇有荔枝贡园和大片古荔枝树。"}
 ];
+/* 历史事件：md 为“月-日”（如 "03-15"），核实后填写即可在当天显示；未填 md 的只出现在大事记里 */
+var EVENTS=[
+{y:589,t:"隋朝设置高州"},
+{y:607,t:"高州一度撤销，改置高凉郡"},
+{y:623,t:"唐初恢复高州建置"},
+{y:684,t:"高力士出生，祖籍潘州（今高州一带）"},
+{y:762,t:"高力士去世，陪葬唐玄宗泰陵"},
+{y:1368,t:"明初升为高州府，统辖周边数县"},
+{y:1912,t:"辛亥革命后废府"},
+{y:1983,t:"高州县划归新设立的茂名市"}
+];
+/* 每日人物：按日期轮换，可继续往后添加（请先核实史料） */
+var PEOPLE=[
+{n:"冼夫人",life:"约 6 世纪",role:"高凉俚族首领",bio:"南北朝至隋初岭南的杰出女首领，嫁高凉太守冯宝，协助治理地方，维护岭南安定，推动与中原的融合，被后世尊为“岭南圣母”。",pts:["关键词：团结统一、保境安民","高州及周边至今保留冼太庙与纪念活动"]},
+{n:"冯盎",life:"隋唐之际",role:"高凉地区首领",bio:"出身冼夫人家族，隋唐之际岭南有影响力的地方首领，归附唐朝后被任命主持高州一带事务，对稳定岭南局势起过重要作用。",pts:["家族：冼夫人、冯宝一脉","后人中有唐代著名宦官高力士"]},
+{n:"高力士",life:"684 年—762 年",role:"唐代政治人物",bio:"本名冯元一，祖籍潘州（今高州一带），冯盎后人。幼年入宫，被高延福收养后改名高力士，受武则天赏识，后协助唐玄宗平定内乱，深得信任，官至骠骑大将军，封齐国公。",pts:["晚年陪伴玄宗，忠诚见称","去世后陪葬唐玄宗泰陵，墓在陕西蒲城"]},
+{n:"潘茂名",life:"西晋至东晋时期",role:"道士、传说人物",bio:"古代著名道士，被后人称为“潘仙”，潘州、茂名等地名相传源于他，是粤西地名文化的重要渊源。",pts:["关键词：潘仙、地名由来","生平多带传说色彩，细节有待史料考证"]}
+];
 var nav=document.getElementById("nav"),main=document.getElementById("main");
 function h(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
 function show(id){
   Array.prototype.forEach.call(nav.children,function(b){b.setAttribute("aria-selected",b.dataset.id===id)});
   var it=DATA.filter(function(x){return x.id===id})[0];
   if(it.quiz){return quiz()}
+  if(it.kind==='today'){return today()}
+  if(it.kind==='person'){return person()}
   var html='<div class="card"><h2>'+h(it.name)+'</h2><div class="tag">'+h(it.tag)+'</div>';
   it.body.forEach(function(p){html+="<p>"+h(p)+"</p>"});
   html+='<ul class="facts">';
   it.facts.forEach(function(f){html+="<li><b>"+h(f[0])+"：</b>"+h(f[1])+"</li>"});
   html+="</ul></div>";
+  main.innerHTML=html;
+}
+function today(){
+  var d=new Date(),m=('0'+(d.getMonth()+1)).slice(-2),dd=('0'+d.getDate()).slice(-2),md=m+'-'+dd;
+  var hit=EVENTS.filter(function(e){return e.md===md});
+  var html='<div class="card"><div class="tag">历史上的今天</div><div class="date">'+(d.getMonth()+1)+' 月 '+d.getDate()+' 日</div>';
+  if(hit.length){hit.forEach(function(e){html+='<div class="ev"><b>'+e.y+'</b><span>'+h(e.t)+'</span></div>'})}
+  else{html+='<div class="hint">今天暂无已核实的日期记录，来看看高州大事记吧。</div>'}
+  html+='</div><div class="card"><h2>高州大事记</h2><div class="tag">按年份排序</div>';
+  EVENTS.slice().sort(function(a,b){return a.y-b.y}).forEach(function(e){html+='<div class="ev"><b>'+e.y+'</b><span>'+h(e.t)+'</span></div>'});
+  html+='</div>';
+  main.innerHTML=html;
+}
+function person(){
+  var d=new Date(),doy=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(d.getFullYear(),0,0))/864e5);
+  var p=PEOPLE[doy%PEOPLE.length];
+  var html='<div class="card"><div class="tag">今日人物 · '+(d.getMonth()+1)+' 月 '+d.getDate()+' 日</div><h2>'+h(p.n)+'</h2><p style="color:var(--sub);margin:0">'+h(p.life)+' · '+h(p.role)+'</p><p>'+h(p.bio)+'</p><ul class="facts">';
+  p.pts.forEach(function(x){html+='<li>'+h(x)+'</li>'});
+  html+='</ul></div>';
   main.innerHTML=html;
 }
 function quiz(){
